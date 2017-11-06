@@ -1,0 +1,2 @@
+web: exchange
+worker: updateDB
