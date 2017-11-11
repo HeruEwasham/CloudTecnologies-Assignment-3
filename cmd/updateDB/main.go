@@ -3,7 +3,7 @@ package main
 import "time"
 import "net/http"
 import "encoding/json"
-import "github.com/HeruEwasham/CloudTecnologies-Assignment-2/exchange"
+import "github.com/HeruEwasham/CloudTecnologies-Assignment-3/exchange"
 
 func sendMessageCheckOK(msg exchange.MessageWebhook) {
 	ok := exchange.SendMessageWebhook(msg)
@@ -106,15 +106,15 @@ func databaseCred(test bool) *exchange.MongoDB {
 		return &exchange.MongoDB{
 			DatabaseURL:            "mongodb://CloudFullAccess:full1916@ds227045.mlab.com:27045/herus-cloud-tecnologies",
 			DatabaseName:           "herus-cloud-tecnologies",
-			WebhookCollectionName:  "webhooks_test",
-			CurrencyCollectionName: "currencies_test",
+			WebhookCollectionName:  "webhooks_v2_test",
+			CurrencyCollectionName: "currencies_v2_test",
 		}
 	}
 	return &exchange.MongoDB{
 		DatabaseURL:            "mongodb://CloudFullAccess:full1916@ds227045.mlab.com:27045/herus-cloud-tecnologies",
 		DatabaseName:           "herus-cloud-tecnologies",
-		WebhookCollectionName:  "webhooks",
-		CurrencyCollectionName: "currencies",
+		WebhookCollectionName:  "webhooks_v2",
+		CurrencyCollectionName: "currencies_v2",
 	}
 }
 

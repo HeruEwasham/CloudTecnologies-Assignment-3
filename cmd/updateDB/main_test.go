@@ -1,6 +1,6 @@
 package main
 
-import "github.com/HeruEwasham/CloudTecnologies-Assignment-2/exchange"
+import "github.com/HeruEwasham/CloudTecnologies-Assignment-3/exchange"
 import "testing"
 
 var testdb exchange.Storage

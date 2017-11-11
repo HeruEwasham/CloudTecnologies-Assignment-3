@@ -26,6 +26,34 @@ type CurrencyRequest struct {
 	TargetCurrency string `json:"targetCurrency"`
 }
 
+// BotRequest - This is the struct which will hold information gotten from a bot (just useful stuff).
+type BotRequest struct {
+	Language 	string `json:"lang"`
+	Status		struct {
+		ErrorType	string `json:"errorType"`
+		Code		float32  `json:"code"`
+	} `json:"status"`
+	Result   	struct {
+		Parameters	struct {
+			BaseCurrency   string `json:"baseCurrency"`
+			TargetCurrency string `json:"targetCurrency"`
+		} `json:"parameters"`
+	} `json:"result"`
+}
+
+// BotAnswer - This is the struct which we will use to send a meaningful answer to a bot.
+type BotAnswer struct {
+	Speech   	string `json:"speech"`
+	DisplayText string `json:"displayText"`
+	Data   		struct {
+		Argument string
+		Message string
+	} `json:"data"`
+	//ContextOut   map `json:"contextOut"`
+	Source   string `json:"source"`
+}
+
+
 // Currency - This is the struct which holds the currencies from
 type Currency struct {
 	Base  string             `json:"base"`
@@ -56,8 +84,8 @@ type Storage interface {
 	RegisterWebhookToDatabase(webhook Webhook) (string, int, error)
 	GetWebhook(id string) (Webhook, int, error)
 	DeleteWebhook(id string) (int, error)
-	GetLatest(string) (float32, string, int, error)
-	GetAverage(string) (float32, int, error)
+	GetLatest(string, string) (float32, string, int, error)
+	GetAverage(string, string) (float32, int, error)
 	RegisterCurrencyToDatabase(Currency) (int, error)
 	GetAllWebhooks() ([]Webhook, int, error)
 	ResetWebhook() bool
@@ -168,7 +196,7 @@ func (DB *MongoDB) DeleteWebhook(id string) (int, error) {
 }
 
 // GetLatest return the latest between currencies.
-func (DB *MongoDB) GetLatest(targetCurrency string) (float32, string, int, error) {
+func (DB *MongoDB) GetLatest(baseCurrency string, targetCurrency string) (float32, string, int, error) {
 	session, err := mgo.Dial(DB.DatabaseURL)
 	if err != nil {
 		return -1, "", 500, err
@@ -179,7 +207,7 @@ func (DB *MongoDB) GetLatest(targetCurrency string) (float32, string, int, error
 	if err != nil {
 		return -1, "", 500, err
 	}
-	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{}).Sort("date").Skip(dbSize - 1).One(&latestCurrency) // Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang
+	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{"baseCurrency": baseCurrency}).Sort("date").Skip(dbSize - 1).One(&latestCurrency) // Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang
 	if err != nil {
 		return -1, "", http.StatusBadRequest, err
 	}
@@ -191,7 +219,7 @@ func (DB *MongoDB) GetLatest(targetCurrency string) (float32, string, int, error
 }
 
 // GetAverage return the average between currencies the last 7 days.
-func (DB *MongoDB) GetAverage(targetCurrency string) (float32, int, error) {
+func (DB *MongoDB) GetAverage(baseCurrency string, targetCurrency string) (float32, int, error) {
 	session, err := mgo.Dial(DB.DatabaseURL)
 	if err != nil {
 		return -1, 500, err
@@ -202,7 +230,7 @@ func (DB *MongoDB) GetAverage(targetCurrency string) (float32, int, error) {
 	if err != nil {
 		return -1, 500, err
 	}
-	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{}).Sort("date").Skip(dbSize - 3).All(&latestCurrencies) // Get the last 7 entries (last seven days). Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang and https://stackoverflow.com/questions/27165692/how-to-get-all-element-from-mongodb-array-using-go
+	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{"baseCurrency": baseCurrency}).Sort("date").Skip(dbSize - 3).All(&latestCurrencies) // Get the last 7 entries (last seven days). Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang and https://stackoverflow.com/questions/27165692/how-to-get-all-element-from-mongodb-array-using-go
 	if err != nil {
 		return -1, http.StatusBadRequest, err
 	}
@@ -373,18 +401,17 @@ func GetLatest(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Bad request: Decoding didn't work on POST-input. "+decodeErr.Error(), http.StatusBadRequest)
 			return
 		}
-		if currencyRequest.BaseCurrency != "EUR" {
+		/*if currencyRequest.BaseCurrency != "EUR" {
 			http.Error(w, "Not implemented: We only support Euro as baseCurrency. ", http.StatusNotImplemented)
 			return
-		}
+		}*/
 
-		latestCurrency, _, statusCode, err := DB.GetLatest(currencyRequest.TargetCurrency) // Get latest currency from database
+		latestCurrency, _, statusCode, err := DB.GetLatest(currencyRequest.BaseCurrency, currencyRequest.TargetCurrency) // Get latest currency from database
 		if err != nil {
 			http.Error(w, "We got an error while getting latest currency: "+err.Error(), statusCode)
 			return
 		}
 
-		// TODO: Give output to user
 		http.Header.Add(w.Header(), "content-type", "text")
 		w.WriteHeader(statusCode)
 		fmt.Fprintf(w, FloatToString(latestCurrency))
@@ -404,12 +431,12 @@ func GetAverage(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Bad request: Decoding didn't work on POST-input. "+decodeErr.Error(), http.StatusBadRequest)
 			return
 		}
-		if currencyRequest.BaseCurrency != "EUR" {
+		/*if currencyRequest.BaseCurrency != "EUR" {
 			http.Error(w, "Not implemented: We only support Euro as baseCurrency. ", http.StatusNotImplemented)
 			return
-		}
+		}*/
 
-		averageCurrency, statusCode, err := DB.GetAverage(currencyRequest.TargetCurrency) // Get the average currency from database
+		averageCurrency, statusCode, err := DB.GetAverage(currencyRequest.BaseCurrency, currencyRequest.TargetCurrency) // Get the average currency from database
 		if err != nil {
 			http.Error(w, "We got an error while getting average currency: "+err.Error(), statusCode)
 			return
@@ -437,8 +464,9 @@ func EvaluationTrigger(w http.ResponseWriter, r *http.Request) {
 
 		for i := 0; i < len(webhooks); i++ {
 			//fmt.Fprint(w, string(webhooks[i].WebhookURL))
+			baseCurrency := webhooks[i].BaseCurrency
 			rateCurrency := webhooks[i].TargetCurrency
-			latestCurrency, _, statusCode, err := DB.GetLatest(rateCurrency) // Get latest currency from database
+			latestCurrency, _, statusCode, err := DB.GetLatest(baseCurrency, rateCurrency) // Get latest currency from database
 			statusCode, err = SendWebhookFunc(webhooks[i], latestCurrency)   // Sends latest currency
 			if err != nil {
 				http.Error(w, "Failed to send webhook number "+strconv.Itoa(i)+" from database (will not send any more webhooks if any). Error:"+err.Error(), statusCode)
@@ -450,5 +478,41 @@ func EvaluationTrigger(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 		http.Error(w, "Not implemented: We only support GET here", http.StatusMethodNotAllowed)
+	}
+}
+
+// BotGetLatest gets the lates currency (in date-order) and sends a bot-understandable json as answer.
+func BotGetLatest(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		botRequest := BotRequest{}
+		decodeErr := json.NewDecoder(r.Body).Decode(&botRequest) // Get POST-request
+		if decodeErr != nil {
+			http.Error(w, "Bad request: Decoding didn't work on POST-input. "+decodeErr.Error(), http.StatusBadRequest)
+			return
+		}
+		if botRequest.Result.Parameters.BaseCurrency != "EUR" {
+			http.Error(w, "Not implemented: We only support Euro as baseCurrency. ", http.StatusNotImplemented)
+			return
+		}
+
+		latestCurrency, _, statusCode, err := DB.GetLatest(botRequest.Result.Parameters.BaseCurrency, botRequest.Result.Parameters.TargetCurrency) // Get latest currency from database
+		if err != nil {
+			http.Error(w, "We got an error while getting latest currency: "+err.Error(), statusCode)
+			return
+		}
+
+		response := "The latest currency conversion between " + botRequest.Result.Parameters.BaseCurrency + " and " + botRequest.Result.Parameters.TargetCurrency + " is " + FloatToString(latestCurrency)
+		botAnswer := BotAnswer{}
+		botAnswer.Speech = response
+		botAnswer.DisplayText = response
+
+		// Return answer to bot:
+		http.Header.Add(w.Header(), "content-type", "application/json")
+		w.WriteHeader(statusCode)
+		json.NewEncoder(w).Encode(&botAnswer)
+
+	} else {
+		http.Error(w, "Method not allowed: We only support POST for this functionality, but you used "+r.Method+".", http.StatusNotImplemented)
+		return
 	}
 }
