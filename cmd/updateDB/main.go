@@ -40,7 +40,7 @@ func getCurrencyFromExternalDatabase(database exchange.Storage, date string, bas
 
 	currencyAlreadyRegistered := false
 
-	_, latestDate, _, err := database.GetLatest("EUR","NOK")
+	_, latestDate, _, err := database.GetLatest(base,"NOK")
 
 	if err == nil { // We don't have an error, check that we havn't added it already
 		if latestDate == currency.Date { // If the date is the same, we don't need to add it to our database
