@@ -207,7 +207,7 @@ func (DB *MongoDB) GetLatest(baseCurrency string, targetCurrency string) (float3
 	if err != nil {
 		return -1, "", 500, err
 	}
-	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{"baseCurrency": baseCurrency}).Sort("date").Skip(dbSize - 1).One(&latestCurrency) // Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang
+	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{/*"baseCurrency": baseCurrency*/}).Sort("date").Skip(dbSize - 1).One(&latestCurrency) // Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang
 	if err != nil {
 		return -1, "", http.StatusBadRequest, err
 	}
