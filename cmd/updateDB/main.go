@@ -13,19 +13,19 @@ func sendMessageCheckOK(msg exchange.MessageWebhook) {
 }
 
 // Is called every day
-func getCurrencyFromExternalDatabase(database exchange.Storage, date string) bool { // Argument is here used for testing
+func getCurrencyFromExternalDatabase(database exchange.Storage, date string, base string) (bool, exchange.Currency) { // Argument is here used for testing
 	msg := exchange.MessageWebhook{}                               // Prepere errormessage if needed
 	msg.Heading = "Couldn't save the latest currency to database!" // Prepare if error
 	msg.DateTime = time.Now().Format("2006-01-02-15:04:05")
 	msg.FromService = "Cloud tecnologies: Assignment 2"
 	currency := exchange.Currency{}
-	response, httpErr := http.Get("http://api.fixer.io/" + date + "?base=EUR") // Call api
+	response, httpErr := http.Get("http://api.fixer.io/" + date + "?base=" + base) // Call api
 	if httpErr != nil {
 		err := "Failed to get fixer.io currency: " + httpErr.Error()
 		msg.Message = err
 		println(err)
 		sendMessageCheckOK(msg)
-		return false
+		return false, currency
 	}
 
 	decodeErr := json.NewDecoder(response.Body).Decode(&currency)
@@ -35,7 +35,7 @@ func getCurrencyFromExternalDatabase(database exchange.Storage, date string) boo
 		msg.Message = err
 		println(err)
 		sendMessageCheckOK(msg)
-		return false
+		return false, currency
 	}
 
 	currencyAlreadyRegistered := false
@@ -56,7 +56,7 @@ func getCurrencyFromExternalDatabase(database exchange.Storage, date string) boo
 			msg.Message = err
 			println(err)
 			sendMessageCheckOK(msg)
-			return false
+			return false, currency
 		}
 
 		webhooks, statusCode, err := database.GetAllWebhooks()
@@ -68,19 +68,19 @@ func getCurrencyFromExternalDatabase(database exchange.Storage, date string) boo
 			if !ok {
 				println("Error when sending message-webhook")
 			}
-			return false
+			return false, currency
 		}
 
 		for i := 0; i < len(webhooks); i++ {
 			rateCurrency := webhooks[i].TargetCurrency
-			if currency.Rates[rateCurrency] >= webhooks[i].MinTriggerValue && currency.Rates[rateCurrency] <= webhooks[i].MaxTriggerValue { // If currency are over or below this webhook-threshold
+			if currency.Base == webhooks[i].BaseCurrency && (currency.Rates[rateCurrency] >= webhooks[i].MinTriggerValue && currency.Rates[rateCurrency] <= webhooks[i].MaxTriggerValue) { // If currency are over or below this webhook-threshold
 				statusCode, err := exchange.SendWebhookFunc(webhooks[i], currency.Rates[rateCurrency])
 				if err != nil {
 					err := "Failed to send webhook number " + string(i) + " from database (will not send any more webhooks if any), got statuscode " + string(statusCode) + ", with error: " + err.Error()
 					msg.Message = err
 					println(err)
 					sendMessageCheckOK(msg)
-					return false
+					return false, currency
 				}
 			}
 		}
@@ -90,7 +90,7 @@ func getCurrencyFromExternalDatabase(database exchange.Storage, date string) boo
 		msg.Message = message
 		println(message)
 		sendMessageCheckOK(msg)
-		return true
+		return true, currency
 	}
 
 	message := "Checked for new currencies, but there was no new currencies to register to database, tried to register currency with date " + currency.Date + ", which is the same as latest currency (which also has the date " + latestDate
@@ -98,7 +98,7 @@ func getCurrencyFromExternalDatabase(database exchange.Storage, date string) boo
 	msg.Message = message
 	println(message)
 	sendMessageCheckOK(msg)
-	return true // This is also something that might be expected
+	return true, currency // This is also something that might be expected
 }
 
 func databaseCred(test bool) *exchange.MongoDB {
@@ -118,11 +118,26 @@ func databaseCred(test bool) *exchange.MongoDB {
 	}
 }
 
+func getAllCurrenciesFromExternalDatabase(database exchange.Storage, date string) bool {
+	ok, currency := getCurrencyFromExternalDatabase(database, date, "EUR")
+	if (!ok) {
+		return false
+	}
+
+	for k := range currency.Rates { 
+		ok, _ := getCurrencyFromExternalDatabase(database, date, k)
+		if (!ok) {
+			return false
+		}
+	}
+	return true
+}
+
 func main() {
 	exchange.DB = databaseCred(false)
 	exchange.DB.Init()
 	for {
-		getCurrencyFromExternalDatabase(exchange.DB, "latest")
+		getAllCurrenciesFromExternalDatabase(exchange.DB, "latest")
 		time.Sleep(time.Hour * 24)
 	}
 }
