@@ -1,3 +1,3 @@
 # README #
 
-This is an answer to Cloud tecnologies assignment 2 2017, deployed to Heroku.
+This is an answer to Cloud tecnologies assignment 3 2017, deployed to Heroku.

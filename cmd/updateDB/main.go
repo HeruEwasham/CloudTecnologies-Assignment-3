@@ -4,6 +4,7 @@ import "time"
 import "net/http"
 import "encoding/json"
 import "github.com/HeruEwasham/CloudTecnologies-Assignment-3/exchange"
+import "strconv"
 
 func sendMessageCheckOK(msg exchange.MessageWebhook) {
 	ok := exchange.SendMessageWebhook(msg)
@@ -124,7 +125,9 @@ func getAllCurrenciesFromExternalDatabase(database exchange.Storage, date string
 		return false
 	}
 
+	println("Number of currencies in EUR is: " + strconv.Itoa(len(currency.Rates)))
 	for k := range currency.Rates { 
+		println("Shall get currency " + k);
 		ok, _ := getCurrencyFromExternalDatabase(database, date, k)
 		if (!ok) {
 			return false

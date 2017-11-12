@@ -117,7 +117,7 @@ func (DB *MongoDB) Init() {
 		panic(err)
 	}
 	defer session.Close()
-	index := mgo.Index{
+	/*index := mgo.Index{
 		Key:        []string{"date"},
 		Unique:     true,
 		DropDups:   true,
@@ -127,7 +127,7 @@ func (DB *MongoDB) Init() {
 	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).EnsureIndex(index)
 	if err != nil {
 		panic(err)
-	}
+	}*/
 }
 
 // RegisterWebhookToDatabase register a webhook to database.
