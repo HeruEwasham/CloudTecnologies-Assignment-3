@@ -490,10 +490,10 @@ func BotGetLatest(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Bad request: Decoding didn't work on POST-input. "+decodeErr.Error(), http.StatusBadRequest)
 			return
 		}
-		if botRequest.Result.Parameters.BaseCurrency != "EUR" {
+		/*if botRequest.Result.Parameters.BaseCurrency != "EUR" {
 			http.Error(w, "Not implemented: We only support Euro as baseCurrency. ", http.StatusNotImplemented)
 			return
-		}
+		}*/
 
 		latestCurrency, _, statusCode, err := DB.GetLatest(botRequest.Result.Parameters.BaseCurrency, botRequest.Result.Parameters.TargetCurrency) // Get latest currency from database
 		if err != nil {
