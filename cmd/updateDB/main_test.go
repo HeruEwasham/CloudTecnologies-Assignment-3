@@ -17,7 +17,7 @@ func Test_GetTodaysCurrency(t *testing.T) {
 	setupNormalDatabase() // Test this part
 	setupTestdatabase()   //?
 	testdb.Init()         //?
-	ok := getCurrencyFromExternalDatabase(testdb, "latest")
+	ok, _ := getCurrencyFromExternalDatabase(testdb, "latest", "EUR")
 	if !ok {
 		t.Error("Function getTodaysCurrency(..) failed. Most likely connection fault, try again.")
 		return

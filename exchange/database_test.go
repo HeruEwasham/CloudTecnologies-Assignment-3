@@ -3,6 +3,10 @@ package exchange
 import "testing"
 import "fmt"
 import "time"
+import "net/http"
+import "net/http/httptest"
+import "bytes"
+import "encoding/json"
 
 var testdb Storage
 
@@ -10,8 +14,8 @@ func setupTestdatabase() {
 	testdb = &MongoDB{
 		"mongodb://CloudFullAccess:full1916@ds227045.mlab.com:27045/herus-cloud-tecnologies",
 		"herus-cloud-tecnologies",
-		"webhooks_test",
-		"currencies_test",
+		"webhooks_v2_test",
+		"currencies_v2_test",
 	}
 }
 
@@ -105,7 +109,7 @@ func Test_GetLatest(t *testing.T) {
 		t.Error("Error when registering currency, statuscode is ", statusCode, ", and error is ", err)
 		return
 	}
-	latestCurrency, _, statusCode, err := testdb.GetLatest("NOK") // Testing by getting latest Currency for Norwegian Kroner
+	latestCurrency, _, statusCode, err := testdb.GetLatest("EUR", "NOK") // Testing by getting latest Currency for Norwegian Kroner
 	if err != nil {
 		t.Error("Error when getting latest currency, statuscode is ", statusCode, ", and error is ", err)
 		return
@@ -137,7 +141,7 @@ func Test_GetAverage(t *testing.T) {
 			return
 		}
 	}
-	averageCurrrency, statusCode, err := testdb.GetAverage("NOK") // Testing by getting latest Currency for Norwegian Kroner
+	averageCurrrency, statusCode, err := testdb.GetAverage("EUR", "NOK") // Testing by getting latest Currency for Norwegian Kroner
 	if err != nil {
 		t.Error("Error when getting average currency, statuscode is ", statusCode, ", and error is ", err)
 		return
@@ -154,3 +158,142 @@ func Test_GetAverage(t *testing.T) {
 		println("Error when resetting currency (connection-fault), manually deletion necessarry")		// Will not give error, but just a remark since this is just to tidy up after the tests.
 	}
 }
+
+func Test_Handler_GetLatest(t *testing.T) {
+	fmt.Println("Starting handler func")
+	setupTestdatabase()                 //?
+	testdb.Init()                       //?
+	rateMap := make(map[string]float32) // Make a map with rates
+	rateMap["NOK"] = 1.56
+	currency := Currency{"EUR", "2100-01-01", rateMap}
+	statusCode, err := testdb.RegisterCurrencyToDatabase(currency)
+	if err != nil {
+		t.Error("Error when registering currency, statuscode is ", statusCode, ", and error is ", err)
+		return
+	}
+	ts := httptest.NewServer(http.HandlerFunc(BotGetLatest))
+	defer ts.Close()
+	postRequest := CurrencyRequest{}
+	postRequest.BaseCurrency = "EUR"
+	postRequest.TargetCurrency = "NOK"
+	jsonStr := new(bytes.Buffer)
+	json.NewEncoder(jsonStr).Encode(&postRequest)
+	r := bytes.NewReader(jsonStr.Bytes())
+	req, err := http.NewRequest("GET", ts.URL + "/exchange/bot/latest", r)
+	if err != nil {
+		t.Error("Error when trying to make a new request to botGetLatest-handler. Error: ", err)
+		return
+	}
+	//defer req.Body.Close()
+	// We can't have this set. And it only contains "/pkg/net/http/" anyway
+    req.RequestURI = ""
+	
+	req.Close = true	
+	//req, err := http.NewRequest("POST", url, )
+	println("Handler GetLatest, json: " + jsonStr.String())
+	//req.Header.Set("X-Custom-Header", "myvalue")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Error("Error when trying to get response from getLatest-handler. Error: ", err)
+		return
+	}
+	defer resp.Body.Close()
+	println(resp.StatusCode)
+	var responseBody[] byte
+	req.Body.Read(responseBody)
+	fmt.Println("Body gotten back from GetLatest-handler is " + string(responseBody))
+	testdb.ResetCurrency()
+}
+
+/*func Test_Handler_GetLatestBot(t *testing.T) {
+	fmt.Println("Starting handler func")
+	setupTestdatabase()                 //?
+	testdb.Init()                       //?
+	rateMap := make(map[string]float32) // Make a map with rates
+	rateMap["NOK"] = 1.56
+	currency := Currency{"EUR", "2100-01-01", rateMap}
+	statusCode, err := testdb.RegisterCurrencyToDatabase(currency)
+	if err != nil {
+		t.Error("Error when registering currency, statuscode is ", statusCode, ", and error is ", err)
+		return
+	}
+	ts := httptest.NewServer(http.HandlerFunc(BotGetLatest))
+	defer ts.Close()
+	postRequest := CurrencyRequest{}
+	postRequest.BaseCurrency = "EUR"
+	postRequest.TargetCurrency = "NOK"
+	jsonStr := new(bytes.Buffer)
+	json.NewEncoder(jsonStr).Encode(&postRequest)
+	r := bytes.NewReader(jsonStr.Bytes())
+	req, err := http.NewRequest("POST", ts.URL + "/exchange/latest", r)
+	if err != nil {
+		t.Error("Error when trying to make a new request to getLatest-handler. Error: ", err)
+		return
+	}
+	req.Body.Close()	
+	//req, err := http.NewRequest("POST", url, )
+	println("Handler GetLatest, json: " + jsonStr.String())
+	//req.Header.Set("X-Custom-Header", "myvalue")
+	req.Header.Set("Content-Type", "application/json")
+	
+	// We can't have this set. And it only contains "/pkg/net/http/" anyway
+    req.RequestURI = ""
+	
+	req.Close = true
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Error("Error when trying to get response from getLatest-handler. Error: ", err)
+	//println("error")
+		return
+	}
+	defer resp.Body.Close()
+	println(resp.StatusCode)
+	var responseBody[] byte
+	req.Body.Read(responseBody)
+	fmt.Println("Body gotten back from GetLatest-handler is " + string(responseBody))
+	testdb.ResetCurrency()
+}
+
+func Test_Handler_Webhook(t *testing.T) {
+	fmt.Println("Starting handler func")
+	setupTestdatabase()                 //?
+	testdb.Init()                       //?
+	ts := httptest.NewServer(http.HandlerFunc(RegisterWebhook))
+	defer ts.Close()
+	//jsonStr := new(bytes.Buffer)
+	//json.NewEncoder(jsonStr).Encode(&postRequest)
+	//r := bytes.NewReader(jsonStr.Bytes())
+	req, err := http.NewRequest("GET", ts.URL + "/exchange/5a10291a14291b49ec19975d", nil)
+	if err != nil {
+		t.Error("Error when trying to make a new request to webhook-handler. Error: ", err)
+		return
+	}
+	//req.Body.Close()	
+	//req, err := http.NewRequest("POST", url, )
+	//println("Handler registerWebhook, json: " + jsonStr.String())
+	//req.Header.Set("X-Custom-Header", "myvalue")
+	req.Header.Set("Content-Type", "application/json")
+	
+	// We can't have this set. And it only contains "/pkg/net/http/" anyway
+    //req.RequestURI = ""
+	
+	req.Close = true
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Error("Error when trying to get response from webhook-handler. Error: ", err)
+		return
+	}
+	defer resp.Body.Close()
+	println(resp.StatusCode)
+	var responseBody[] byte
+	req.Body.Read(responseBody)
+	//fmt.Println("Body gotten back from GetLatest-handler is " + string(responseBody))
+	
+}*/

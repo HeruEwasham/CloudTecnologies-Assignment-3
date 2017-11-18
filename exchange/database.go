@@ -203,11 +203,11 @@ func (DB *MongoDB) GetLatest(baseCurrency string, targetCurrency string) (float3
 	}
 	defer session.Close()
 	latestCurrency := Currency{}
-	/*dbSize, err := session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Count()
+/*	dbSize, err := session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Count()
 	if err != nil {
 		return -1, "", 500, err
 	}*/
-	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{"base": baseCurrency})/*.Sort("date").Skip(dbSize - 1)*/.One(&latestCurrency) // Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang
+	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{"base": baseCurrency}).Sort("-date")/*.Skip(dbSize - 1)*/.One(&latestCurrency) // Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang
 	if err != nil {
 		return -1, "", http.StatusBadRequest, err
 	}
@@ -230,7 +230,7 @@ func (DB *MongoDB) GetAverage(baseCurrency string, targetCurrency string) (float
 	if err != nil {
 		return -1, 500, err
 	}
-	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{"baseCurrency": baseCurrency}).Sort("date").Skip(dbSize - 3).All(&latestCurrencies) // Get the last 7 entries (last seven days). Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang and https://stackoverflow.com/questions/27165692/how-to-get-all-element-from-mongodb-array-using-go
+	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{"base": baseCurrency}).Sort("date").Skip(dbSize - 3).All(&latestCurrencies) // Get the last 7 entries (last seven days). Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang and https://stackoverflow.com/questions/27165692/how-to-get-all-element-from-mongodb-array-using-go
 	if err != nil {
 		return -1, http.StatusBadRequest, err
 	}
