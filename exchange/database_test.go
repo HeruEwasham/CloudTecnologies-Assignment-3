@@ -3,11 +3,12 @@ package exchange
 import "testing"
 import "fmt"
 import "time"
-import "net/http"
-import "net/http/httptest"
-import "bytes"
-import "encoding/json"
-import "io/ioutil"
+
+//import "net/http"
+//import "net/http/httptest"
+//import "bytes"
+//import "encoding/json"
+//import "io/ioutil"
 
 var testdb Storage
 
@@ -212,9 +213,9 @@ func Test_GetAverage(t *testing.T) {
 
 	fmt.Println("Body gotten back from GetLatest-handler is " + string(responseBody))
 	testdb.ResetCurrency()
-}
+}*/
 
-func Test_Handler_GetLatestBot(t *testing.T) {
+/*func Test_Handler_GetLatestBot(t *testing.T) {
 	fmt.Println("Starting handler func")
 	setupTestdatabase()                 //?
 	testdb.Init()                       //?
@@ -265,9 +266,9 @@ func Test_Handler_GetLatestBot(t *testing.T) {
 	responseBody, _ := ioutil.ReadAll(resp.Body)
 	fmt.Println("Body gotten back from BotGetLatest-handler is " + string(responseBody))
 	testdb.ResetCurrency()
-}
+}*/
 
-func Test_Handler_Webhook(t *testing.T) {
+/*func Test_Handler_Webhook(t *testing.T) {
 	fmt.Println("Starting handler func")
 	ts := httptest.NewServer(http.HandlerFunc(RegisterWebhook))
 	defer ts.Close()
