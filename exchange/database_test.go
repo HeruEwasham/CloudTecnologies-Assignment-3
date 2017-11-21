@@ -14,7 +14,7 @@ var testdb Storage
 
 func setupTestdatabase() {
 	testdb = &MongoDB{
-		"mongodb://CloudFullAccess:full1916@ds227045.mlab.com:27045/herus-cloud-tecnologies",
+		"mongodb://localhost",
 		"herus-cloud-tecnologies",
 		"webhooks_v2_test",
 		"currencies_v2_test",
