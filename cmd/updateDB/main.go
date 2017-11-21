@@ -41,7 +41,7 @@ func getCurrencyFromExternalDatabase(database exchange.Storage, date string, bas
 
 	currencyAlreadyRegistered := false
 
-	_, latestDate, _, err := database.GetLatest(base,"NOK")
+	_, latestDate, _, err := database.GetLatest(base, "NOK")
 
 	if err == nil { // We don't have an error, check that we havn't added it already
 		if latestDate == currency.Date { // If the date is the same, we don't need to add it to our database
@@ -121,15 +121,15 @@ func databaseCred(test bool) *exchange.MongoDB {
 
 func getAllCurrenciesFromExternalDatabase(database exchange.Storage, date string) bool {
 	ok, currency := getCurrencyFromExternalDatabase(database, date, "EUR")
-	if (!ok) {
+	if !ok {
 		return false
 	}
 
 	println("Number of currencies in EUR is: " + strconv.Itoa(len(currency.Rates)))
-	for k := range currency.Rates { 
-		println("Shall get currency " + k);
+	for k := range currency.Rates {
+		println("Shall get currency " + k)
 		ok, _ := getCurrencyFromExternalDatabase(database, date, k)
-		if (!ok) {
+		if !ok {
 			return false
 		}
 	}

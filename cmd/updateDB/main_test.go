@@ -25,7 +25,7 @@ func Test_GetTodaysCurrency(t *testing.T) {
 
 	ok = testdb.ResetCurrency()
 	if !ok {
-		println("Couldn't reset Currency-collection (connection fault), manually reset neccessarry")	// Will not give error, but just a remark since this is just to tidy up after the tests.
+		println("Couldn't reset Currency-collection (connection fault), manually reset neccessarry") // Will not give error, but just a remark since this is just to tidy up after the tests.
 		return
 	}
 }

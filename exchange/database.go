@@ -28,13 +28,13 @@ type CurrencyRequest struct {
 
 // BotRequest - This is the struct which will hold information gotten from a bot (just useful stuff).
 type BotRequest struct {
-	Language 	string `json:"lang"`
-	Status		struct {
-		ErrorType	string `json:"errorType"`
-		Code		float32  `json:"code"`
+	Language string `json:"lang"`
+	Status   struct {
+		ErrorType string  `json:"errorType"`
+		Code      float32 `json:"code"`
 	} `json:"status"`
-	Result   	struct {
-		Parameters	struct {
+	Result struct {
+		Parameters struct {
 			BaseCurrency   string `json:"baseCurrency"`
 			TargetCurrency string `json:"targetCurrency"`
 		} `json:"parameters"`
@@ -43,16 +43,15 @@ type BotRequest struct {
 
 // BotAnswer - This is the struct which we will use to send a meaningful answer to a bot.
 type BotAnswer struct {
-	Speech   	string `json:"speech"`
+	Speech      string `json:"speech"`
 	DisplayText string `json:"displayText"`
-	Data   		struct {
+	Data        struct {
 		Argument string
-		Message string
+		Message  string
 	} `json:"data"`
 	//ContextOut   map `json:"contextOut"`
-	Source   string `json:"source"`
+	Source string `json:"source"`
 }
-
 
 // Currency - This is the struct which holds the currencies from
 type Currency struct {
@@ -203,11 +202,11 @@ func (DB *MongoDB) GetLatest(baseCurrency string, targetCurrency string) (float3
 	}
 	defer session.Close()
 	latestCurrency := Currency{}
-/*	dbSize, err := session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Count()
-	if err != nil {
-		return -1, "", 500, err
-	}*/
-	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{"base": baseCurrency}).Sort("-date")/*.Skip(dbSize - 1)*/.One(&latestCurrency) // Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang
+	/*	dbSize, err := session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Count()
+		if err != nil {
+			return -1, "", 500, err
+		}*/
+	err = session.DB(DB.DatabaseName).C(DB.CurrencyCollectionName).Find(bson.M{"base": baseCurrency}).Sort("-date"). /*.Skip(dbSize - 1)*/ One(&latestCurrency) // Gotten from: https://stackoverflow.com/questions/38127583/get-last-inserted-element-from-mongodb-in-golang
 	if err != nil {
 		return -1, "", http.StatusBadRequest, err
 	}
@@ -467,7 +466,7 @@ func EvaluationTrigger(w http.ResponseWriter, r *http.Request) {
 			baseCurrency := webhooks[i].BaseCurrency
 			rateCurrency := webhooks[i].TargetCurrency
 			latestCurrency, _, statusCode, err := DB.GetLatest(baseCurrency, rateCurrency) // Get latest currency from database
-			statusCode, err = SendWebhookFunc(webhooks[i], latestCurrency)   // Sends latest currency
+			statusCode, err = SendWebhookFunc(webhooks[i], latestCurrency)                 // Sends latest currency
 			if err != nil {
 				http.Error(w, "Failed to send webhook number "+strconv.Itoa(i)+" from database (will not send any more webhooks if any). Error:"+err.Error(), statusCode)
 				return
